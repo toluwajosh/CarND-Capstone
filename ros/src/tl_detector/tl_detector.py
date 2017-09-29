@@ -155,25 +155,6 @@ class TLDetector(object):
 
         return transform_mat
 
-    def get_classification(self, image):
-        # Initial state
-        state = TrafficLight.UNKNOWN
-
-        # Match pixel area
-        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        mask_image = cv2.inRange(hsv_image, np.array([150, 100, 150]), np.array([180, 255, 255]))
-        extracted_image = cv2.bitwise_and(image, image, mask=mask_image)
-        area = cv2.countNonZero(mask_image)
-
-        # Check threshold
-        pixels = 40
-
-        if area > pixels:
-            state = TrafficLight.RED
-
-        # Return traffic light state - only UNKNOWN / RED
-
-        return state
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
@@ -242,13 +223,7 @@ class TLDetector(object):
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
 
-
         #TODO use light location to zoom in on traffic light in image
-
-        #Get classification
-        light_state = self.get_classification(cv_image)
-
-        # rospy.logwarn("light state: %s", light_state)
 
         return self.light_classifier.get_classification(cv_image)
 
@@ -310,9 +285,9 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = 1
+        light = None
         light_positions = self.config['light_positions']
-        visible_distance = 90.0
+        visible_distance = 200.0
         smallest_dist = float('inf')
         if self.waypoints != None:
             if(self.pose):
@@ -343,11 +318,11 @@ class TLDetector(object):
                             smallest_dist = dist
                             light = light_tmp
                             light_wp = light_pose
-
-
-            if light and smallest_dist < visible_distance and car_position < light_wp:
+            # if car_position < light_wp:
+            if light and (smallest_dist < visible_distance) and (car_position < light_wp):
                 try:
                     state = self.get_light_state(light)
+                    # rospy.logwarn("light waypoint: %s", light_wp)
                     return light_wp, state
                 except Exception as e:
                     rospy.logwarn("Error: %s", e)

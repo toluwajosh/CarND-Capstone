@@ -99,6 +99,8 @@ class DBWNode(object):
 		# vehicle twists:
 		self.target_vel_lin = msg.twist.linear.x
 		self.target_vel_ang = msg.twist.angular.z
+
+		# rospy.logwarn("target velocity: %s", self.target_vel_lin)
 		
 
 	def waypoints_cb(self, waypoints):
@@ -130,6 +132,7 @@ class DBWNode(object):
 															self.cur_vel_lin, 
 															self.cur_vel_ang, 
 															time_elapsed)
+					# rospy.logwarn("Brake: %s", brake)
 				except Exception as e:
 					rospy.logwarn("Error: %s", e)
 					pass

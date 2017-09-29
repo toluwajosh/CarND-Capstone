@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32, Header
 
 import math
 
@@ -21,6 +22,16 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
+def logistic(x):
+    return 1.0 / (1.0 + math.exp(-x))
+
+
+def interpolate(start, stop, steps):
+    x = [float(i) / steps for i in range(steps)]
+    return [(stop - start) * logistic(8.0 * i - 4.0) + start for i in x]
+
+
+
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
 
@@ -33,13 +44,13 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+
 
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-        # new_wp_lane = Lane()
-        # rospy.logwarn("attributes of lane class %s", new_wp_lane.__dict__)
 
         rospy.spin()
 
@@ -50,11 +61,12 @@ class WaypointUpdater(object):
 
         # vehicle orientation in quanternions
         self.vehicle_orientation = msg.pose.orientation
-        # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
+
 
     def waypoints_cb(self, waypoints):
 
         # TODO: Implement
+        self.waypoints = waypoints
         if hasattr(self, 'vehicle_pos'):
         # try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = float('inf')
@@ -81,29 +93,39 @@ class WaypointUpdater(object):
             # quaternion conversion (see: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_Angles_Conversion)
             q = self.vehicle_orientation
             theta = math.asin(2*(q.w*q.y + q.z*q.x))
-            # if abs(theta)>= 1:
-            #     theta = math.pi/2.0
-            # else:
-            #     theta = math.asin(theta)
             heading =  hd(self.vehicle_pos, wp_pos)
             angle = abs(theta - heading)
 
             if (angle>math.pi/4.0):
                 nearest_wp += 1
 
+
+            # the next part should only be done if there is a red light
+            # set tl_waypoint velocity to 0
+            # rospy.logwarn("traffic callback: %s", self.tl_waypoint)
+            if self.tl_waypoint != -1:
+
+                # distance between vehicle waypoint and the traffic light waypoint
+                distance = self.distance(waypoints.waypoints, nearest_wp, self.tl_waypoint-30)
+                new_vel = math.sqrt(2 * 10 * (distance))
+
+                rospy.logwarn("new target velocity: %s", new_vel)
+                self.set_waypoint_velocity(waypoints.waypoints, nearest_wp, new_vel)
+
+
+
             final_wps = self.get_final_wps(waypoints, nearest_wp)
             self.prev_nrst_wp = nearest_wp - 5
 
             # the next condition might not work for arbitrary non-cyclic destinations
-            if nearest_wp > 10696:
+            if nearest_wp > (self.wp_num-100):
                 self.prev_nrst_wp = 0
             
             rospy.logwarn("nearest waypoint: %s", nearest_wp)
 
-        # except AttributeError, e:
-        #     # rospy.logwarn("Error: %s", e) # optional: print out error
-        #     pass
-        # else:
+            self.vehicle_wp = nearest_wp
+
+
             # publish final waypoints only if vehicle position has been received
             self.final_waypoints_pub.publish(final_wps)
 
@@ -118,7 +140,10 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        # callback for /traffic_waypoint
+        self.tl_waypoint = msg.data
+
+        
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
