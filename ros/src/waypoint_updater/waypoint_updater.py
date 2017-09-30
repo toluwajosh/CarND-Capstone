@@ -7,6 +7,7 @@ from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32, Header
 
 import math
+import numpy as np
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -23,24 +24,22 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-def logistic(x):
-  return 1.0 / (1.0 + math.exp(-x))
-
-
-def interpolate(start, stop, steps):
-  x = [float(i) / steps for i in range(steps)]
-  return [(stop - start) * logistic(8.0 * i - 4.0) + start for i in x]
-
-
-
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+MAX_DECEL     = 4.0
+STOP_BUFFER = 6.0
 
 
 class WaypointUpdater(object):
   def __init__(self):
 
-    # properties
+    # Properties
     self.prev_nrst_wp = 0 # total number of waypoints are 10902
+    self.vehicle_pos = None
+    self.current_linear_velocity = None
+    self.upcoming_traffic_light_position = None
+    self.waypoints = None
+    self.braking = None
+    self.decel = 1.0
 
     # subscribers
     rospy.init_node('waypoint_updater')
@@ -59,7 +58,12 @@ class WaypointUpdater(object):
     rospy.spin()
 
   def pose_cb(self, msg):
-    # TODO: Implement
+    # # Log position change
+    # if self.vehicle_pos != None:
+    #     distance_change = math.sqrt((msg.pose.position.x - self.vehicle_pos.x)**2 + (msg.pose.position.y - self.vehicle_pos.y)**2)
+    #     if distance_change > 2:
+    #       print("Vehicle position: {}, {}".format(msg.pose.position.x, msg.pose.position.y))
+
     # current pose of the vehicle
     self.vehicle_pos = msg.pose.position
 
@@ -138,8 +142,8 @@ class WaypointUpdater(object):
             self.set_waypoint_velocity(final_wps.waypoints, 0, new_vel)
 
             # for debug
-            if i == 0:
-              rospy.logwarn("NEW TARGET VEL: %s", new_vel)
+            # if i == 0:
+            #   rospy.logwarn("NEW TARGET VEL: %s", new_vel)
           else:
             self.set_waypoint_velocity(final_wps.waypoints, i, 0)                    
 
@@ -153,8 +157,8 @@ class WaypointUpdater(object):
       
 
       current_vel = self.get_waypoint_velocity(final_wps.waypoints[0])
-      rospy.logwarn("current waypoint velocity: %s", current_vel)
-      rospy.logwarn("nearest waypoint: %s", nearest_wp)
+      # rospy.logwarn("current waypoint velocity: %s", current_vel)
+      # rospy.logwarn("nearest waypoint: %s", nearest_wp)
 
       self.vehicle_wp = nearest_wp
 
@@ -170,23 +174,25 @@ class WaypointUpdater(object):
         break
       new_wp_lane.waypoints.append(waypoints.waypoints[i])
     return new_wp_lane
+    
 
   def traffic_cb(self, msg):
-    # TODO: Callback for /traffic_waypoint message. Implement
     # callback for /traffic_waypoint
     self.tl_waypoint = msg.data
 
-    
 
   def obstacle_cb(self, msg):
     # TODO: Callback for /obstacle_waypoint message. We will implement it later
     pass
 
+
   def get_waypoint_velocity(self, waypoint):
     return waypoint.twist.twist.linear.x
 
+
   def set_waypoint_velocity(self, waypoints, waypoint, velocity):
     waypoints[waypoint].twist.twist.linear.x = velocity
+
 
   def distance(self, waypoints, wp1, wp2):
     dist = 0
