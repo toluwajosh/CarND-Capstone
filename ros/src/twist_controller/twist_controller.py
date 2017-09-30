@@ -11,12 +11,6 @@ class Controller(object):
     def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle): # , *args, **kwargs
         # TODO: Implement
         # contoller parameters: kp, ki, kd
-        # self.velocity_pid = PID(1.0, 0.05, 0.2)
-        # # self.velocity_pid = PID(1.0, 0.05, 0.5)
-        # # self.velocity_pid = PID(5.0, 0.05, 0.5)
-        # # self.steer_pid = PID(5.0, 0.0, 0.00002)
-        # self.steer_pid = PID(5.0, 0.1, 0.00002)
-
         self.velocity_pid = PID(2.0, 0.0, 0.0)
         self.steer_pid = PID(6.8, 0.0, 0.05)
 
