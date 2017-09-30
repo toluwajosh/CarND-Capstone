@@ -59,22 +59,19 @@ class WaypointUpdater(object):
         if self.vehicle_pos != None and self.waypoints != None:
             waypoints = self.waypoints
             
-            # try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = float('inf')
             nearest_wp = 0
 
-            # rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
             self.wp_num = len(waypoints.waypoints)
-            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
+
             hd = lambda a, b: math.atan2((b.y-a.y), (b.x-a.x))
-            
 
             for i in xrange(self.prev_nrst_wp, self.wp_num):
                 
                 wp_pos = waypoints.waypoints[i].pose.pose.position
 
                 # distance between vehichle and the nearest waypoint
-                dist = dl(self.vehicle_pos, wp_pos)
+                dist = self.distance(self.vehicle_pos, wp_pos)
 
                 if dist < smallest_dist:
                     nearest_wp = i
@@ -103,7 +100,8 @@ class WaypointUpdater(object):
                 tl_closest_waypoint_index = self.get_closest_waypoint(self.upcoming_traffic_light_position, waypoints.waypoints)
                 final_wps = self.get_final_waypoints(waypoints.waypoints, nearest_wp, tl_closest_waypoint_index)
             
-            rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            # rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            print("Nearest Waypoint >> {}".format(nearest_wp))
             self.final_waypoints_pub.publish(final_wps)
 
     def pose_cb(self, msg):
@@ -118,7 +116,6 @@ class WaypointUpdater(object):
 
         # vehicle orientation in quanternions
         self.vehicle_orientation = msg.pose.orientation
-        # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
 
     def waypoints_cb(self, waypoints):
 

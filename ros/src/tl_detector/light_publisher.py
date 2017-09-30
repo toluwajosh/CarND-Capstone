@@ -12,55 +12,55 @@ import rospkg
 import math
 
 class TLPublisher(object):
-    def __init__(self):
-        rospy.init_node('tl_publisher')
+  def __init__(self):
+    rospy.init_node('tl_publisher')
 
-        self.traffic_light_pubs = rospy.Publisher('/vehicle/traffic_lights', TrafficLightArray, queue_size=1)
+    self.traffic_light_pubs = rospy.Publisher('/vehicle/traffic_lights', TrafficLightArray, queue_size=1)
 
-        light = self.create_light(20.991, 22.837, 1.524, 0.08, 3)
-        lights = TrafficLightArray()
-        lights.header = light.header
-        lights.lights = [light]
-        self.lights = lights
-        self.loop()
+    light = self.create_light(20.991, 22.837, 1.524, 0.08, 3)
+    lights = TrafficLightArray()
+    lights.header = light.header
+    lights.lights = [light]
+    self.lights = lights
+    self.loop()
 
-    def loop(self):
-        rate = rospy.Rate(50)
-        while not rospy.is_shutdown():
-            self.traffic_light_pubs.publish(self.lights)
-            rate.sleep()
+  def loop(self):
+    rate = rospy.Rate(50)
+    while not rospy.is_shutdown():
+      self.traffic_light_pubs.publish(self.lights)
+      rate.sleep()
 
-    def create_light(self, x, y, z, yaw, state):
-        light = TrafficLight()
+  def create_light(self, x, y, z, yaw, state):
+    light = TrafficLight()
 
-        light.header = Header()
-        light.header.stamp = rospy.Time.now()
-        light.header.frame_id = 'world'
+    light.header = Header()
+    light.header.stamp = rospy.Time.now()
+    light.header.frame_id = 'world'
 
-        light.pose = self.create_pose(x, y, z, yaw)
-        light.state = state
+    light.pose = self.create_pose(x, y, z, yaw)
+    light.state = state
 
-        return light
+    return light
 
-    def create_pose(self, x, y, z, yaw=0.):
-        pose = PoseStamped()
+  def create_pose(self, x, y, z, yaw=0.):
+    pose = PoseStamped()
 
-        pose.header = Header()
-        pose.header.stamp = rospy.Time.now()
-        pose.header.frame_id = 'world'
+    pose.header = Header()
+    pose.header.stamp = rospy.Time.now()
+    pose.header.frame_id = 'world'
 
-        pose.pose.position.x = x
-        pose.pose.position.y = y
-        pose.pose.position.z = z
+    pose.pose.position.x = x
+    pose.pose.position.y = y
+    pose.pose.position.z = z
 
-        q = tf.transformations.quaternion_from_euler(0., 0., math.pi * yaw/180.)
-        pose.pose.orientation = Quaternion(*q)
+    q = tf.transformations.quaternion_from_euler(0., 0., math.pi * yaw/180.)
+    pose.pose.orientation = Quaternion(*q)
 
-        return pose
+    return pose
 
 
 if __name__ == '__main__':
-    try:
-        TLPublisher()
-    except rospy.ROSInterruptException:
-        rospy.logerr('Could not start traffic publisher node.')
+  try:
+    TLPublisher()
+  except rospy.ROSInterruptException:
+    rospy.logerr('Could not start traffic publisher node.')
