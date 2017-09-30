@@ -287,7 +287,7 @@ class TLDetector(object):
         """
         light = None
         light_positions = self.config['light_positions']
-        visible_distance = 200.0
+        visible_distance = 70.0
         smallest_dist = float('inf')
         if self.waypoints != None:
             if(self.pose):
