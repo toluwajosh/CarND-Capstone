@@ -36,6 +36,11 @@ class DBWNode(object):
 	def __init__(self):
 		rospy.init_node('dbw_node')
 
+		self.cur_vel_lin = 0.0
+		self.cur_vel_ang = 0.0
+		self.target_vel_lin = 0.0
+		self.target_vel_ang = 0.0
+
 		vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
 		fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
 		brake_deadband = rospy.get_param('~brake_deadband', .1)
@@ -77,6 +82,8 @@ class DBWNode(object):
 	def dbw_enabled_cb(self, msg):
 		# to check if drive by wire is enabled
 		self.dbw_enabled_check = msg.data
+		self.controller.reset()
+		print("DBW enabled: {}".format(msg.data))
 
 
 	def crnt_vel_cb(self, msg):
@@ -110,11 +117,11 @@ class DBWNode(object):
 
 				try:
 					throttle, brake, steering = self.controller.control(
-																							self.target_vel_lin, 
-																							self.target_vel_ang, 
-																							self.cur_vel_lin, 
-																							self.cur_vel_ang, 
-																							time_elapsed)
+													self.target_vel_lin, 
+													self.target_vel_ang, 
+													self.cur_vel_lin, 
+													self.cur_vel_ang, 
+													time_elapsed)
 				except Exception as e:
 					rospy.logwarn("Error: %s", e)
 					pass
@@ -138,8 +145,8 @@ class DBWNode(object):
 
 		bcmd = BrakeCmd()
 		bcmd.enable = True
-		bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-		bcmd.pedal_cmd = brake
+		bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
+		bcmd.pedal_cmd = brake * 100.0
 		self.brake_pub.publish(bcmd)
 
 

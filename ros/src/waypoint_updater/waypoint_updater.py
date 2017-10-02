@@ -25,7 +25,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
 MAX_DECEL     = 1.0
-STOP_BUFFER   = 5.0
+STOP_BUFFER   = 5.5
 
 class WaypointUpdater(object):
   def __init__(self):
@@ -85,7 +85,8 @@ class WaypointUpdater(object):
       if (angle>math.pi/4.0):
         nearest_wp += 1
 
-      should_brake = self.should_brake()
+      upcoming_traffic_light_position = self.upcoming_traffic_light_position
+      should_brake = self.should_brake(upcoming_traffic_light_position)
       final_wps = None
       if not should_brake:
         self.braking = False
@@ -96,7 +97,7 @@ class WaypointUpdater(object):
 
       else:
         self.braking = True
-        tl_closest_waypoint_index = self.get_closest_waypoint(self.upcoming_traffic_light_position, waypoints.waypoints)
+        tl_closest_waypoint_index = self.get_closest_waypoint(upcoming_traffic_light_position, waypoints.waypoints)
         final_wps = self.get_final_waypoints(waypoints.waypoints, nearest_wp, tl_closest_waypoint_index)
       
       self.final_waypoints_pub.publish(final_wps)
@@ -138,9 +139,9 @@ class WaypointUpdater(object):
     for i in range(start_wp, end_wp):
       index = i % len(waypoints)
       wp = Waypoint()
-      wp.pose.pose.position.x  = waypoints[index].pose.pose.position.x
-      wp.pose.pose.position.y  = waypoints[index].pose.pose.position.y
-      wp.pose.pose.position.z  = waypoints[index].pose.pose.position.z
+      wp.pose.pose.position.x = waypoints[index].pose.pose.position.x
+      wp.pose.pose.position.y = waypoints[index].pose.pose.position.y
+      wp.pose.pose.position.z = waypoints[index].pose.pose.position.z
       wp.pose.pose.orientation = waypoints[index].pose.pose.orientation
 
       if self.braking:
@@ -161,11 +162,11 @@ class WaypointUpdater(object):
       for i in range(end_wp, start_wp + LOOKAHEAD_WPS):
         index = i % len(waypoints)
         wp = Waypoint()
-        wp.pose.pose.position.x  = waypoints[index].pose.pose.position.x
-        wp.pose.pose.position.y  = waypoints[index].pose.pose.position.y
-        wp.pose.pose.position.z  = waypoints[index].pose.pose.position.z
+        wp.pose.pose.position.x = waypoints[index].pose.pose.position.x
+        wp.pose.pose.position.y = waypoints[index].pose.pose.position.y
+        wp.pose.pose.position.z = waypoints[index].pose.pose.position.z
         wp.pose.pose.orientation = waypoints[index].pose.pose.orientation
-        wp.twist.twist.linear.x  = 0.0
+        wp.twist.twist.linear.x = 0.0
         final_waypoints.append(wp)
       final_waypoints = self.decelerate(final_waypoints, tl_wp)
 
@@ -175,15 +176,15 @@ class WaypointUpdater(object):
 
     return new_wp_lane
 
-  def should_brake(self):
+  def should_brake(self, upcoming_traffic_light_position):
     should_brake = False
-    if self.waypoints != None and self.vehicle_pos != None and self.upcoming_traffic_light_position != None:
+    if self.waypoints != None and self.vehicle_pos != None and upcoming_traffic_light_position != None:
       wpts = self.waypoints.waypoints
-      tl_dist = self.distance(self.vehicle_pos, self.upcoming_traffic_light_position)
-      min_stopping_dist = (self.current_linear_velocity**2 / (2.0 * MAX_DECEL) + STOP_BUFFER) * 2
+      tl_dist = self.distance(self.vehicle_pos, upcoming_traffic_light_position)
+      min_stopping_dist = self.current_linear_velocity**2 / (2.0 * MAX_DECEL) + STOP_BUFFER
       should_brake = (tl_dist < min_stopping_dist)
 
-    print("Should brake: {}, Has red light: {}".format(should_brake, self.upcoming_traffic_light_position != None))
+    print("Should brake: {}, Has red light: {}".format(should_brake, upcoming_traffic_light_position != None))
 
     return should_brake
 
