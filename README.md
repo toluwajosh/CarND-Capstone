@@ -6,7 +6,7 @@ Team PolbyteCar:
 - David Vidal (david.vidal124@gmail.com)
 - Joshua Owoyemi (tjosh.owoyemi@gmail.com)
 - Marcel Lotsch (marcellotsch@gmx.de)
-- Aleksandrs Levinskis (a.levinskis@gmail.com)
+- Aleksandrs Levinskis (levinskis.edu@gmail.com)
 
 
 ### Installation 
